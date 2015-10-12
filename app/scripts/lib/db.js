@@ -4,6 +4,15 @@
 var SQL = window.SQL;
 var _ = require('underscore');
 
+function partition(arr, size) {
+  var chunks = [];
+  for (var i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+
+  return chunks;
+}
+
 function createTableDdl(schema) {
   var ddl = 'CREATE TABLE ' + schema.tableName + '(';
 
@@ -13,6 +22,8 @@ function createTableDdl(schema) {
   ddl += ');';
   return ddl;
 }
+
+var SQLITE_MAX_VARIABLE_NUMBER = 999;
 
 function Db() {
   var db = new SQL.Database();
@@ -46,18 +57,21 @@ function Db() {
       return;
     }
 
-    var sql = 'INSERT INTO ' + tableName;
-    sql += '(' + _.map(schema.columns, function(columnSchema) {
+    var baseSql = 'INSERT INTO ' + tableName;
+    baseSql += '(' + _.map(schema.columns, function(columnSchema) {
       return columnSchema.name;
     }).join(', ') + ')';
-    sql += ' values ';
-
+    baseSql += ' values ';
     var rowSql = '(' + Array.apply(null, Array(schema.columns.length)).map(function() { return '?'; }).join(', ') + ')';
-    var rowsSql = Array.apply(null, Array(rows.length)).map(function() { return rowSql; }).join(', ');
 
-    sql += rowsSql;
+    // SQLite can't handle too many bounds variables, so insert rows in batches.
+    var rowChunkCount = Math.floor(SQLITE_MAX_VARIABLE_NUMBER / schema.columns.length);
+    var rowChunks = partition(rows, rowChunkCount);
 
-    db.run(sql, _.flatten(rows));
+    _.each(rowChunks, function(chunk) {
+      var sql = baseSql + Array.apply(null, Array(chunk.length)).map(function() { return rowSql; }).join(', ');
+      db.run(sql, _.flatten(chunk));
+    });
   };
 
   this.execute = function(sql) {
