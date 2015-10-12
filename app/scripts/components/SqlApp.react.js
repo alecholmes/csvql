@@ -219,8 +219,7 @@ ORDER BY population DESC');
         <footer className='footer'>
           <div className='container-fluid'>
             <p className='text-muted'>
-              © 2015 <a href='http://www.alecholmes.com'>Alec Holmes</a> |
-              <a href='https://github.com/alecholmes/csvql'>Source</a>
+              © 2015 <a href='http://www.alecholmes.com'>Alec Holmes</a> | <a href='https://github.com/alecholmes/csvql'>Source</a>
             </p>
           </div>
         </footer>
